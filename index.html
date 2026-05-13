@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Поле Чудес • Полная версия</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: linear-gradient(135deg, #1a4a2e, #0d2b1a);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', 'Arial', sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+    .game-container {
+      max-width: 700px;
+      width: 100%;
+      background: rgba(255, 215, 0, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 40px;
+      padding: 30px 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      border: 2px solid #d4af37;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 25px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      color: #ffd700;
+      text-shadow: 3px 3px 0 #8b4513;
+      letter-spacing: 3px;
+      text-align: center;
+    }
+    .wheel-area {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      margin: 10px auto;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      filter: drop-shadow(0 10px 15px rgba(0,0,0,0.7));
+    }
+    .arrow {
+      position: absolute;
+      top: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 40px;
+      color: #ffd700;
+      filter: drop-shadow(0 4px 4px black);
+      z-index: 10;
+      pointer-events: none;
+    }
+    .score-panel {
+      background: #2e1e0f;
+      border: 3px solid #c9a03a;
+      border-radius: 30px;
+      padding: 10px 30px;
+      color: #ffd966;
+      font-weight: bold;
+      font-size: 1.5rem;
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .word-display {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      background: #1f3b2c;
+      padding: 20px;
+      border-radius: 20px;
+      border: 2px solid #b8860b;
+      margin: 10px 0;
+    }
+    .letter-box {
+      width: 45px;
+      height: 55px;
+      background: #f5e7d3;
+      border-bottom: 4px solid #8b5a2b;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: bold;
+      color: #2d1c0b;
+      text-transform: uppercase;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
+      align-items: center;
+      margin-top: 10px;
+    }
+    button {
+      background: #d4af37;
+      border: none;
+      color: #1a3b1a;
+      font-weight: bold;
+      font-size: 1.2rem;
+      padding: 12px 25px;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #8b6914;
+      transition: 0.1s linear;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border: 2px solid #ffd966;
+    }
+    button:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #6b4e0a;
+    }
+    button:disabled {
+      opacity: 0.5;
+      transform: translateY(2px);
+      box-shadow: 0 3px 0 #6b4e0a;
+      pointer-events: none;
+    }
+    .message-area {
+      font-size: 1.3rem;
+      color: #fff3c9;
+      background: #00000055;
+      padding: 8px 20px;
+      border-radius: 30px;
+      min-height: 45px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .keyboard {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      max-width: 500px;
+    }
+    .key-btn {
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      font-size: 1.2rem;
+      border-radius: 12px;
+      background: #fae5b1;
+      border: 2px solid #b49450;
+      color: #2d1f0c;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .key-btn.used {
+      opacity: 0.4;
+      pointer-events: none;
+      background: #7f6b4a;
+    }
+    @media (max-width: 500px) {
+      .wheel-area {
+        width: 220px;
+        height: 220px;
+      }
+      .letter-box {
+        width: 35px;
+        height: 45px;
+        font-size: 1.6rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="game-container">
+  <h1>🎩 Поле Чудес</h1>
+
+  <div class="wheel-area">
+    <div class="arrow">▼</div>
+    <canvas id="wheelCanvas" width="400" height="400"></canvas>
+  </div>
+
+  <div class="score-panel">
+    <span>💰 Очки: <span id="currentScore">0</span></span>
+    <span>🏆 Всего: <span id="totalScore">0</span></span>
+  </div>
+
+  <div class="word-display" id="wordContainer"></div>
+
+  <div class="message-area" id="message">Крутите барабан!</div>
+
+  <div class="controls">
+    <button id="spinButton">🎡 Крутить</button>
+    <button id="newWordButton">🔄 Новое слово</button>
+  </div>
+
+  <div class="keyboard" id="keyboard"></div>
+</div>
+
+<script>
+  (function() {
+    // ---------- ЗВУКОВОЙ ДВИЖОК ----------
+    let audioCtx = null;
+    function initAudio() {
+      if (audioCtx) return;
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch (e) {
+        console.log("Web Audio не поддерживается");
+      }
+    }
+
+    function playBeep(freq, type, duration, vol = 0.15, delay = 0) {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+      gain.gain.setValueAtTime(vol, audioCtx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(audioCtx.currentTime + delay);
+      osc.stop(audioCtx.currentTime + delay + duration);
+    }
+
+    // Звук вращения (трещотка) — будем вызывать с интервалом
+    function playTickSound() {
+      playBeep(1200 + Math.random() * 300, 'square', 0.04, 0.08);
+    }
+
+    // Финальный удар при остановке
+    function playStopSound() {
+      playBeep(250, 'triangle', 0.3, 0.2);
+      setTimeout(() => playBeep(200, 'triangle', 0.3, 0.2), 120);
+    }
+
+    function playFanfare() {
+      if (!audioCtx) return;
+      const notes = [523, 659, 784, 1047];
+      notes.forEach((freq, i) => {
+        setTimeout(() => playBeep(freq, 'square', 0.25, 0.2), i * 120);
+      });
+      setTimeout(() => playBeep(784, 'triangle', 0.5, 0.25), 500);
+    }
+
+    function playLoseSound() {
+      playBeep(200, 'sawtooth', 0.3, 0.15);
+      setTimeout(() => playBeep(150, 'sawtooth', 0.3, 0.1), 150);
+    }
+
+    // ---------- ДАННЫЕ ИГРЫ ----------
+    const words = [
+      { word: "АПЕЛЬСИН", hint: "Фрукт" },
+      { word: "МАШИНА", hint: "Транспорт" },
+      { word: "КОМПЬЮТЕР", hint: "Техника" },
+      { word: "БИБЛИОТЕКА", hint: "Место с книгами" },
+      { word: "СОЛНЦЕ", hint: "Звезда" },
+      { word: "ГИТАРА", hint: "Музыкальный инструмент" },
+      { word: "ТЕЛЕВИЗОР", hint: "Электроника" },
+      { word: "ПИНГВИН", hint: "Птица" },
+      { word: "ФУТБОЛ", hint: "Спорт" },
+      { word: "КОСМОС", hint: "Пространство" }
+    ];
+
+    const sectors = [
+      { label: "100", value: 100, color: "#f4a261" },
+      { label: "200", value: 200, color: "#e9c46a" },
+      { label: "300", value: 300, color: "#2a9d8f" },
+      { label: "400", value: 400, color: "#e76f51" },
+      { label: "500", value: 500, color: "#a7c957" },
+      { label: "БАНКРОТ", value: 0, color: "#333333", bankrupt: true },
+      { label: "×2", value: -1, color: "#f77f00", multiplier: true }, 
+      { label: "ПРИЗ", value: -2, color: "#9c89b8", prize: true },
+      { label: "0", value: 0, color: "#b5838d", skip: true },
+      { label: "150", value: 150, color: "#6d597a" },
+      { label: "250", value: 250, color: "#4895ef" },
+      { label: "350", value: 350, color: "#f25c54" }
+    ];
+
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Состояние
+    let currentWord = "";
+    let hint = "";
+    let revealedLetters = [];
+    let currentSpinValue = 0;
+    let spinInProgress = false;
+    let gameActive = true;
+    let usedLetters = new Set();
+
+    // Элементы UI
+    const wordContainer = document.getElementById('wordContainer');
+    const currentScoreSpan = document.getElementById('currentScore');
+    const totalScoreSpan = document.getElementById('totalScore');
+    const messageDiv = document.getElementById('message');
+    const spinButton = document.getElementById('spinButton');
+    const newWordButton = document.getElementById('newWordButton');
+    const keyboardDiv = document.getElementById('keyboard');
+
+    let totalScore = 0;
+    let roundScore = 0;
+    let tickInterval = null; // для звука вращения
+
+    // ---------- РИСОВАНИЕ КОЛЕСА ----------
+    function drawWheel(rotation = 0) {
+      const width = canvas.width;
+      const height = canvas.height;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const radius = width / 2.2;
+      const numSectors = sectors.length;
+      const angleStep = (Math.PI * 2) / numSectors;
+
+      ctx.clearRect(0, 0, width, height);
+      
+      for (let i = 0; i < numSectors; i++) {
+        const startAngle = i * angleStep + rotation;
+        const endAngle = startAngle + angleStep;
+        
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+        ctx.closePath();
+        
+        ctx.fillStyle = sectors[i].color;
+        ctx.fill();
+        ctx.strokeStyle = '#ffd966';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(startAngle + angleStep / 2);
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 16px 'Segoe UI'";
+        ctx.shadowColor = "black";
+        ctx.shadowBlur = 4;
+        ctx.fillText(sectors[i].label, radius * 0.7, 6);
+        ctx.restore();
+      }
+      
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius * 0.12, 0, Math.PI*2);
+      ctx.fillStyle = "#2d1c0b";
+      ctx.fill();
+      ctx.strokeStyle = "#d4af37";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
+    function getSectorByAngle(angle) {
+      const numSectors = sectors.length;
+      const angleStep = (Math.PI * 2) / numSectors;
+      let rawAngle = angle % (Math.PI * 2);
+      if (rawAngle < 0) rawAngle += Math.PI * 2;
+      const index = Math.floor(rawAngle / angleStep) % numSectors;
+      return sectors[index];
+    }
+
+    // ---------- ЛОГИКА СЛОВА ----------
+    function loadRandomWord() {
+      const randomIndex = Math.floor(Math.random() * words.length);
+      const wordData = words[randomIndex];
+      currentWord = wordData.word.toUpperCase();
+      hint = wordData.hint;
+      revealedLetters = new Array(currentWord.length).fill(false);
+      usedLetters.clear();
+      roundScore = 0;
+      currentSpinValue = 0;
+      gameActive = true;
+      updateUI();
+      renderWord();
+      renderKeyboard();
+      messageDiv.textContent = `Тема: ${hint}. Крутите барабан!`;
+      spinButton.disabled = false;
+    }
+
+    function revealLetter(letter) {
+      let revealed = false;
+      for (let i = 0; i < currentWord.length; i++) {
+        if (currentWord[i] === letter && !revealedLetters[i]) {
+          revealedLetters[i] = true;
+          revealed = true;
+        }
+      }
+      return revealed;
+    }
+
+    function checkWin() {
+      return revealedLetters.every(v => v === true);
+    }
+
+    function handleCorrectLetter(letter) {
+      const revealed = revealLetter(letter);
+      if (revealed) {
+        if (currentSpinValue > 0) {
+          roundScore += currentSpinValue;
+          messageDiv.textContent = `Есть буква "${letter}"! +${currentSpinValue} очков.`;
+        } else if (currentSpinValue === -1) {
+          roundScore *= 2;
+          messageDiv.textContent = `Сектор ×2! Очки удвоены!`;
+        } else if (currentSpinValue === -2) {
+          messageDiv.textContent = `Призовой сектор! Буква "${letter}" открыта, но очков нет.`;
+        } else {
+          messageDiv.textContent = `Буква "${letter}" есть! (0 очков за сектор)`;
+        }
+        
+        renderWord();
+        if (checkWin()) {
+          gameActive = false;
+          totalScore += roundScore;
+          messageDiv.textContent = `🎉 ПОБЕДА! Слово: ${currentWord}. Вы выиграли раунд!`;
+          playFanfare();
+          spinButton.disabled = true;
+          updateScoreDisplay();
+        }
+      } else {
+        messageDiv.textContent = `Буквы "${letter}" нет. Ход переходит.`;
+        playLoseSound();
+      }
+      usedLetters.add(letter);
+      renderKeyboard();
+      updateScoreDisplay();
+    }
+
+    function applySectorAction(sector) {
+      if (sector.bankrupt) {
+        roundScore = 0;
+        messageDiv.textContent = "БАНКРОТ! Все очки раунда сгорели.";
+        playLoseSound();
+        updateScoreDisplay();
+        spinButton.disabled = false;
+        return true;
+      }
+      if (sector.skip) {
+        messageDiv.textContent = "Переход хода (0 очков).";
+        spinButton.disabled = false;
+        return true;
+      }
+      if (sector.multiplier) {
+        currentSpinValue = -1;
+        messageDiv.textContent = "Сектор ×2! Называйте букву.";
+        spinButton.disabled = true;
+        return false;
+      }
+      if (sector.prize) {
+        currentSpinValue = -2;
+        messageDiv.textContent = "ПРИЗ! Можете назвать букву (без очков).";
+        spinButton.disabled = true;
+        return false;
+      }
+      currentSpinValue = sector.value;
+      messageDiv.textContent = `Сектор: ${sector.label} очков! Называйте букву.`;
+      spinButton.disabled = true;
+      return false;
+    }
+
+    // ---------- ВРАЩЕНИЕ (СО ЗВУКОМ) ----------
+    function spinWheel() {
+      if (spinInProgress || !gameActive) return;
+      initAudio();
+      spinInProgress = true;
+      spinButton.disabled = true;
+      
+      // Запускаем звук вращения (щелчки с интервалом)
+      if (tickInterval) clearInterval(tickInterval);
+      tickInterval = setInterval(() => {
+        playTickSound();
+      }, 70); // частота щелчков
+
+      const spinDuration = 3000 + Math.random() * 2000;
+      const totalRotation = (Math.PI * 2 * (4 + Math.floor(Math.random() * 4))) + Math.random() * Math.PI * 2;
+      let startTime = null;
+      const initialRotation = parseFloat(canvas.dataset.rotation || "0");
+
+      function animateSpin(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / spinDuration, 1.0);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const currentRotation = initialRotation + totalRotation * easeOut;
+        
+        drawWheel(currentRotation);
+        canvas.dataset.rotation = currentRotation;
+        
+        if (progress < 1.0) {
+          requestAnimationFrame(animateSpin);
+        } else {
+          // Остановка: убираем тиканье
+          if (tickInterval) {
+            clearInterval(tickInterval);
+            tickInterval = null;
+          }
+          spinInProgress = false;
+          playStopSound(); // финальный акцент
+          
+          const finalAngle = currentRotation % (Math.PI * 2);
+          const sector = getSectorByAngle(finalAngle);
+          applySectorAction(sector);
+          updateScoreDisplay();
+        }
+      }
+      
+      requestAnimationFrame(animateSpin);
+    }
+
+    // ---------- ИНТЕРФЕЙС ----------
+    function renderWord() {
+      wordContainer.innerHTML = '';
+      for (let i = 0; i < currentWord.length; i++) {
+        const box = document.createElement('div');
+        box.className = 'letter-box';
+        box.textContent = revealedLetters[i] ? currentWord[i] : '';
+        wordContainer.appendChild(box);
+      }
+    }
+
+    function renderKeyboard() {
+      keyboardDiv.innerHTML = '';
+      const alphabet = 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'.split('');
+      alphabet.forEach(letter => {
+        const btn = document.createElement('button');
+        btn.className = 'key-btn';
+        if (usedLetters.has(letter)) btn.classList.add('used');
+        btn.textContent = letter;
+        btn.disabled = !gameActive || spinButton.disabled === false || usedLetters.has(letter) || spinInProgress;
+        btn.addEventListener('click', () => {
+          if (!gameActive || spinInProgress) return;
+          if (usedLetters.has(letter)) return;
+          if (spinButton.disabled === false) {
+            messageDiv.textContent = "Сначала крутите барабан!";
+            return;
+          }
+          handleCorrectLetter(letter);
+        });
+        keyboardDiv.appendChild(btn);
+      });
+    }
+
+    function updateScoreDisplay() {
+      currentScoreSpan.textContent = roundScore;
+      totalScoreSpan.textContent = totalScore;
+    }
+
+    function updateUI() {
+      updateScoreDisplay();
+      renderKeyboard();
+      drawWheel(parseFloat(canvas.dataset.rotation || "0"));
+    }
+
+    // ---------- СОБЫТИЯ ----------
+    spinButton.addEventListener('click', spinWheel);
+    newWordButton.addEventListener('click', () => {
+      if (tickInterval) clearInterval(tickInterval);
+      totalScore += roundScore;
+      roundScore = 0;
+      loadRandomWord();
+      updateScoreDisplay();
+      drawWheel(0);
+      canvas.dataset.rotation = 0;
+    });
+
+    // Инициализация
+    canvas.dataset.rotation = "0";
+    drawWheel(0);
+    loadRandomWord();
+    totalScore = 0;
+    updateScoreDisplay();
+
+    document.body.addEventListener('click', initAudio, { once: true });
+  })();
+</script>
+</body>
+</html>
